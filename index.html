@@ -2,63 +2,100 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dla mojej Walentynki ❤️</title>
     <style>
         body {
             margin: 0;
-            height: 100vh;
+            height: 100vh; /* Zajmuje całą wysokość ekranu telefonu */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             background-color: #ffe6e6;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; /* Żeby button nie uciekł poza scrollbary */
+            overflow: hidden; /* Blokuje przewijanie, żeby button nie uciekł poza ekran */
+            touch-action: manipulation; /* Ułatwia interakcję na dotykowych ekranach */
         }
+
+        #main-content {
+            text-align: center;
+            padding: 20px;
+        }
+
         h1 {
             color: #d63384;
             font-size: 3rem;
-            text-align: center;
             margin-bottom: 50px;
         }
+
         .buttons {
-            position: relative;
             display: flex;
-            gap: 20px;
+            justify-content: center;
+            gap: 20px; /* Odstęp między przyciskami */
+            position: relative;
         }
+
         button {
             padding: 15px 40px;
             font-size: 1.5rem;
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            transition: transform 0.2s;
+            /* Dodajemy płynne przejście dla ruchu */
+            transition: transform 0.2s, top 0.3s ease, left 0.3s ease; 
+            white-space: nowrap; /* Zapobiega łamaniu tekstu w przycisku */
         }
+
         #yesBtn {
             background-color: #28a745;
             color: white;
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            z-index: 10; /* Zawsze na wierzchu */
         }
+
         #yesBtn:hover {
             transform: scale(1.1);
         }
+
         #noBtn {
             background-color: #dc3545;
             color: white;
-            position: absolute; /* Kluczowe dla mechaniki ucieczki */
+            /* POPRAWKA: Usunięto position: absolute stąd. 
+               Teraz na starcie jest obok TAK. */
             box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
         }
+
         /* Efekt końcowy */
-        .hidden { display: none; }
+        .hidden { display: none !important; }
+        
         #success-msg {
-            color: #d63384;
+            /* POPRAWKA: Kolor zmieniony na czarny */
+            color: black; 
             font-size: 4rem;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
         @keyframes popIn {
-            from { transform: scale(0); opacity: 0; }
+            from { transform: scale(0.5); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- Responsywność (Dostosowanie do telefonu) --- */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem; /* Mniejszy nagłówek na telefonie */
+            }
+            button {
+                padding: 12px 30px; /* Nieco mniejsze przyciski */
+                font-size: 1.2rem;
+            }
+            #success-msg {
+                font-size: 2.5rem; /* Mniejszy komunikat końcowy */
+            }
         }
     </style>
 </head>
@@ -73,7 +110,7 @@
     </div>
 
     <div id="success-msg" class="hidden">
-        SUPER! ❤️ Widzimy się 14-tego!
+        SUPER! ❤️<br>Widzimy się 14-tego!
     </div>
 
     <script>
@@ -82,33 +119,50 @@
         const mainContent = document.getElementById('main-content');
         const successMsg = document.getElementById('success-msg');
 
-        // Logika uciekania przycisku
-        noBtn.addEventListener('mouseover', () => {
-            // Pobieramy wymiary viewportu i przycisku
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-            const btnWidth = noBtn.offsetWidth;
-            const btnHeight = noBtn.offsetHeight;
+        let isRunning = false;
 
-            // Obliczamy nowe losowe współrzędne, ale w granicach okna
-            // Odejmujemy wymiary przycisku, żeby nie wyskoczył poza ekran
-            const newX = Math.random() * (windowWidth - btnWidth - 50); 
-            const newY = Math.random() * (windowHeight - btnHeight - 50);
+        function runAway() {
+            // Pobieramy wymiary viewportu (bezpieczniejsze na mobile)
+            // Używamy document.documentElement.clientWidth zamiast window.innerWidth
+            // aby uniknąć problemów z paskami przewijania na niektórych przeglądarkach
+            const maxWidth = document.documentElement.clientWidth - noBtn.offsetWidth - 20;
+            const maxHeight = document.documentElement.clientHeight - noBtn.offsetHeight - 20;
 
-            // Nadpisujemy pozycję na 'fixed' względem okna, żeby uciekał z flexboxa
-            noBtn.style.position = 'fixed';
+            // Losowe współrzędne
+            const newX = Math.max(10, Math.floor(Math.random() * maxWidth));
+            const newY = Math.max(10, Math.floor(Math.random() * maxHeight));
+
+            // Kluczowy moment: zmiana pozycjonowania na fixed, żeby "uwolnić" przycisk
+            if (!isRunning) {
+                noBtn.style.position = 'fixed';
+                isRunning = true;
+            }
+            
             noBtn.style.left = newX + 'px';
             noBtn.style.top = newY + 'px';
-        });
+        }
+
+        // Obsługa dla komputerów (myszka)
+        noBtn.addEventListener('mouseover', runAway);
+
+        // Obsługa dla telefonów (dotyk)
+        // Na telefonie pierwsze "tapnięcie" jest często traktowane jak hover,
+        // co powoduje ucieczkę zanim system zarejestruje kliknięcie.
+        noBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Zapobiega "kliknięciu"
+            runAway();
+        }, { passive: false });
+
 
         // Logika sukcesu
         yesBtn.addEventListener('click', () => {
             mainContent.style.display = 'none';
             successMsg.classList.remove('hidden');
-            successMsg.style.display = 'block';
             
-            // Opcjonalnie: konfetti (prosty efekt emoji w tle)
+            // Opcjonalnie: konfetti w tle
             document.body.style.backgroundImage = "url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>')";
+            document.body.style.backgroundSize = "100px 100px";
+            document.body.style.opacity = "0.9";
         });
     </script>
 </body>
